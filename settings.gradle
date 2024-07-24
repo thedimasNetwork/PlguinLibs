@@ -1,3 +1,4 @@
 include 'ranks'
 include 'logger'
+include 'menus'
 
