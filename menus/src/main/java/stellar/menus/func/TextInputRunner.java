@@ -1,4 +1,4 @@
-package stellar.menus;
+package stellar.menus.func;
 
 import mindustry.gen.Player;
 

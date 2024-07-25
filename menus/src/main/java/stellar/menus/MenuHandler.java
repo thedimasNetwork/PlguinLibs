@@ -6,7 +6,12 @@ import arc.util.Log;
 import mindustry.game.EventType;
 import mindustry.gen.Call;
 import mindustry.gen.Player;
+import stellar.menus.func.MenuRunner;
+import stellar.menus.func.TextInputRunner;
+import stellar.menus.ui.Button;
+import stellar.menus.ui.CloseButton;
 
+import java.util.Arrays;
 import java.util.Random;
 
 /* TODO:
@@ -17,6 +22,7 @@ import java.util.Random;
 public class MenuHandler {
     private static final short id = randomShort(); // first two bytes are handler id and the last two are the handler id
     private static final IntMap<MenuRunner> menuRunners = new IntMap<>();
+    private static final IntMap<MenuRunner> buttonRunners = new IntMap<>();
     private static final IntMap<TextInputRunner> textInputRunners = new IntMap<>();
 
     private static short lastMenuId = Short.MIN_VALUE;
@@ -50,6 +56,21 @@ public class MenuHandler {
             Call.followUpMenu(player.con(), menuId, title, message, buttons);
         } else {
             Call.menu(player.con(), menuId, title, message, buttons);
+        }
+        return menuId;
+    }
+
+    public static int menu(Player player, String title, String message, Button[][] buttons, MenuRunner runner) {
+        String[][] strings = Arrays.stream(buttons)
+                .map(b -> Arrays.stream(b).map(Button::getText).toArray(String[]::new))
+                .toArray(String[][]::new);
+        int menuId = menu(player, title, message, strings, runner);
+        int index = 0;
+        for (Button[] row : buttons) {
+            for (Button b : row) {
+                buttonRunners.put(menuId << 16 | index, b.getRunner());
+                index++;
+            }
         }
         return menuId;
     }
@@ -100,5 +121,4 @@ public class MenuHandler {
         runner.accept(textInputId, text, player);
         textInputRunners.remove(textInputId);
     }
-
 }
