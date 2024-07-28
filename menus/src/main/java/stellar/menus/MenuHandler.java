@@ -8,22 +8,19 @@ import mindustry.gen.Call;
 import mindustry.gen.Player;
 import stellar.menus.func.MenuRunner;
 import stellar.menus.func.TextInputRunner;
-import stellar.menus.ui.Button;
-import stellar.menus.ui.CloseButton;
+import stellar.menus.types.Menu;
 
-import java.util.Arrays;
 import java.util.Random;
 
 /* TODO:
  * Proper UI editor with different button types, pages and more
- * (?) Bundle support; won't happen as bundles are included in the plugin not in the libs
+ * (?) Bundle support; probably won't happen as bundles are included in the plugin not in the libs
  */
 @SuppressWarnings("unused")
 public class MenuHandler {
     private static final short id = randomShort(); // first two bytes are handler id and the last two are the handler id
-    private static final IntMap<MenuRunner> menuRunners = new IntMap<>();
-    private static final IntMap<MenuRunner> buttonRunners = new IntMap<>();
     private static final IntMap<TextInputRunner> textInputRunners = new IntMap<>();
+    private static final IntMap<Menu> menus = new IntMap<>();
 
     private static short lastMenuId = Short.MIN_VALUE;
     private static short lastTextInputId = Short.MIN_VALUE;
@@ -45,37 +42,29 @@ public class MenuHandler {
         Events.on(EventType.TextInputEvent.class, MenuHandler::handleTextInput);
     }
 
-    public static int menu(Player player, String title, String message, String[][] buttons, MenuRunner runner) {
+    public static Menu menu(Player player, String title, String message, String[][] buttons, MenuRunner runner) {
         return menu(player, title, message, buttons, false, runner);
     }
 
-    public static int menu(Player player, String title, String message, String[][] buttons, boolean followUp, MenuRunner runner) {
+    public static Menu menu(Player player, String title, String message, String[][] buttons, boolean followUp, MenuRunner runner) {
         int menuId = id << 16 | nextMenuId();
-        menuRunners.put(menuId, runner);
+        return menu(player, title, message, buttons, followUp, menuId, runner);
+    }
+
+    /** Manually specified menuId. <b>Only for internal use.</b> **/
+    private static Menu menu(Player player, String title, String message, String[][] buttons, boolean followUp, int menuId, MenuRunner runner) {
+        Menu menu = new Menu(player, title, message, buttons, followUp, menuId, runner);
+        menus.put(menuId, menu);
         if (followUp) {
             Call.followUpMenu(player.con(), menuId, title, message, buttons);
         } else {
             Call.menu(player.con(), menuId, title, message, buttons);
         }
-        return menuId;
-    }
-
-    public static int menu(Player player, String title, String message, Button[][] buttons, MenuRunner runner) {
-        String[][] strings = Arrays.stream(buttons)
-                .map(b -> Arrays.stream(b).map(Button::getText).toArray(String[]::new))
-                .toArray(String[][]::new);
-        int menuId = menu(player, title, message, strings, runner);
-        int index = 0;
-        for (Button[] row : buttons) {
-            for (Button b : row) {
-                buttonRunners.put(menuId << 16 | index, b.getRunner());
-                index++;
-            }
-        }
-        return menuId;
+        return menu;
     }
 
     public static void closeMenu(Player player, int menuId) {
+        menus.remove(menuId);
         Call.hideFollowUpMenu(player.con(), menuId);
     }
 
@@ -86,7 +75,8 @@ public class MenuHandler {
         return textInputId;
     }
 
-    private static String toHex(short s) {
+    /** Converts 16-bit numbers to hex strings. */
+    public static String toHex(short s) {
         return String.format("%04x", s);
     }
 
@@ -95,15 +85,15 @@ public class MenuHandler {
         int option = event.option;
         Player player = event.player;
 
-        if (!menuRunners.containsKey(menuId >> 16)) return; // don't handle if the menu came to another handler
+        if (!menus.containsKey(menuId >> 16)) return; // don't handle if the menu came to another handler
 
-        MenuRunner runner = menuRunners.get(menuId);
-        if (runner == null) {
-            Log.warn("Menu runner for menu @/@ is null", toHex((short) (menuId & 0xffff)), toHex((short) (menuId >> 16)));
+        Menu menu = menus.get(menuId);
+        if (menu == null) {
+            Log.warn("Menu for menu @/@ is null", toHex((short) (menuId & 0xffff)), toHex((short) (menuId >> 16)));
             return;
         }
-        runner.accept(menuId, option, player);
-        menuRunners.remove(menuId);
+        menu.handle(menuId, option, player);
+        menus.remove(menuId);
     }
 
     private static void handleTextInput(EventType.TextInputEvent event) {
