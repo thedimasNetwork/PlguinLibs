@@ -11,9 +11,9 @@ buildscript {
 
 
 ext {
-    mindustryVersion = 'v145'
-    lombokVersion = '1.18.26'
-    annotationsVersion = '24.0.0'
+    mindustryVersion = "v146"
+    lombokVersion = "1.18.26"
+    annotationsVersion = "24.0.0"
 }
 
 subprojects {
