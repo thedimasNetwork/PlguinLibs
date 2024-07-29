@@ -21,10 +21,11 @@ public class Menu {
     private final String[][] buttons;
     private final boolean followUp;
     private final int menuId;
-    private final MenuRunner runner;
+    @Setter(value = AccessLevel.PRIVATE)
+    private MenuRunner runner = MenuRunner.none;
 
-    @Getter(value= AccessLevel.PRIVATE)
-    @Setter(value=AccessLevel.PRIVATE)
+    @Getter(value = AccessLevel.PRIVATE)
+    @Setter(value = AccessLevel.PRIVATE)
     private ObjectMap<Integer, MenuRunner> buttonRunners = new ObjectMap<>();
 
     public Menu show() {
@@ -44,6 +45,11 @@ public class Menu {
     public Menu onButton(int option, MenuRunner runner) {
         buttonRunners.put(option, runner);
         return this; // to make it chainable
+    }
+
+    public Menu onInteract(MenuRunner runner) {
+        this.runner = runner;
+        return this;
     }
 
     /** Handle the event with the menu runners. */

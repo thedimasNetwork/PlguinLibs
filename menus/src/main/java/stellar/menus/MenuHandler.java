@@ -53,7 +53,7 @@ public class MenuHandler {
 
     /** Manually specified menuId. <b>Only for internal use.</b> **/
     private static Menu menu(Player player, String title, String message, String[][] buttons, boolean followUp, int menuId, MenuRunner runner) {
-        Menu menu = new Menu(player, title, message, buttons, followUp, menuId, runner);
+        Menu menu = new Menu(player, title, message, buttons, followUp, menuId).onInteract(runner);
         menus.put(menuId, menu);
         if (followUp) {
             Call.followUpMenu(player.con(), menuId, title, message, buttons);
